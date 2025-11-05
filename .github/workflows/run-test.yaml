@@ -1,16 +1,6 @@
 name: Run tests
 
-on:
-  # run on push in main or rel_* branches excluding changes are only on doc or example folders
-  push:
-    branches:
-      - main
-      - "rel_*"
-      # branches used to test the workflow
-      - "workflow_test_*"
-    paths-ignore:
-      - "examples/**"
-
+on: push
 env:
   # global env to all steps
   TOX_WORKERS: -n4
@@ -20,138 +10,140 @@ permissions:
 
 jobs:
   run-test:
-    name: test-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.architecture }}-${{ matrix.build-type }}
+    name: test-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.architecture
+      }}-${{ matrix.build-type }}
     runs-on: ${{ matrix.os }}
     strategy:
       # run this job using this matrix, excluding some combinations below.
       matrix:
         os:
-          - "ubuntu-22.04"
-          - "ubuntu-22.04-arm"
-          - "windows-latest"
-          - "macos-latest"
-          - "macos-13"
+        - ubuntu-22.04
+        - ubuntu-22.04-arm
+        - windows-latest
+        - macos-latest
+        - macos-13
         python-version:
-          - "3.7"
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14.0-alpha - 3.14"
-          - "pypy-3.10"
+        - '3.7'
+        - '3.8'
+        - '3.9'
+        - '3.10'
+        - '3.11'
+        - '3.12'
+        - '3.13'
+        - 3.14.0-alpha - 3.14
+        - pypy-3.10
         build-type:
           # builds greenlet, runs asyncio tests.  includes aiosqlite driver
-          - "cext-greenlet"
+        - cext-greenlet
 
           # these do not install greenlet at all and skip asyncio tests.
           # does not include aiosqlite driver
-          - "cext"
-          - "nocext"
+        - cext
+        - nocext
         architecture:
-          - x64
-          - x86
-          - arm64
+        - x64
+        - x86
+        - arm64
 
         include:
           # autocommit tests fail on the ci for some reason
-          - python-version: "pypy-3.10"
-            pytest-args: "-k 'not test_autocommit_on and not test_turn_autocommit_off_via_default_iso_level and not test_autocommit_isolation_level'"
+        - python-version: pypy-3.10
+          pytest-args: -k 'not test_autocommit_on and not test_turn_autocommit_off_via_default_iso_level
+            and not test_autocommit_isolation_level'
 
         exclude:
           # cext-greenlet only runs on ubuntu x64 and arm64
-          - build-type: "cext-greenlet"
-            os: "windows-latest"
-          - build-type: "cext-greenlet"
-            os: "windows-11-arm"
-          - build-type: "cext-greenlet"
-            os: "macos-latest"
-          - build-type: "cext-greenlet"
-            os: "macos-13"
+        - build-type: cext-greenlet
+          os: windows-latest
+        - build-type: cext-greenlet
+          os: windows-11-arm
+        - build-type: cext-greenlet
+          os: macos-latest
+        - build-type: cext-greenlet
+          os: macos-13
 
           # the threaded pythons are not stable under greenlet. Even
           # though we can run individual tests, when you run the whole suite
           # with xdist and the greenlet wrapper, the workers keep crashing
           # and getting replaced
-          - build-type: "cext-greenlet"
-            python-version: "3.13t"
+        - build-type: cext-greenlet
+          python-version: 3.13t
 
-          - build-type: "cext-greenlet"
-            python-version: "3.14t-dev"
+        - build-type: cext-greenlet
+          python-version: 3.14t-dev
 
           # skip py 3.14 on x64, because greenlet builds are not on
           # pypi and these dont compile yet
-          - architecture: x64
-            python-version:
-                - "3.14.0-alpha - 3.14"
-                - "3.14t-dev"
+        - architecture: x64
+          python-version:
+          - 3.14.0-alpha - 3.14
+          - 3.14t-dev
           # linux do not have x86 / arm64 python
-          - os: "ubuntu-22.04"
-            architecture: x86
-          - os: "ubuntu-22.04"
-            architecture: arm64
+        - os: ubuntu-22.04
+          architecture: x86
+        - os: ubuntu-22.04
+          architecture: arm64
           # linux-arm does not have x86 / x64 python
-          - os: "ubuntu-22.04-arm"
-            architecture: x86
-          - os: "ubuntu-22.04-arm"
-            architecture: x64
+        - os: ubuntu-22.04-arm
+          architecture: x86
+        - os: ubuntu-22.04-arm
+          architecture: x64
           # linux-arm does not have 3.7 python
-          - os: "ubuntu-22.04-arm"
-            python-version: "3.7"
+        - os: ubuntu-22.04-arm
+          python-version: '3.7'
           # windows does not have arm64 python
-          - os: "windows-latest"
-            architecture: arm64
+        - os: windows-latest
+          architecture: arm64
           # macos: latests uses arm macs. only 3.10+; no x86/x64
-          - os: "macos-latest"
-            architecture: x86
-          - os: "macos-latest"
-            architecture: x64
-          - os: "macos-latest"
-            python-version: "3.7"
-          - os: "macos-latest"
-            python-version: "3.8"
-          - os: "macos-latest"
-            python-version: "3.9"
+        - os: macos-latest
+          architecture: x86
+        - os: macos-latest
+          architecture: x64
+        - os: macos-latest
+          python-version: '3.7'
+        - os: macos-latest
+          python-version: '3.8'
+        - os: macos-latest
+          python-version: '3.9'
           # macos 13: uses intel macs. no arm64, x86
-          - os: "macos-13"
-            architecture: arm64
-          - os: "macos-13"
-            architecture: x86
+        - os: macos-13
+          architecture: arm64
+        - os: macos-13
+          architecture: x86
           # pypy does not have cext or x86 or arm on linux
-          - python-version: "pypy-3.10"
-            build-type: "cext"
-          - os: "ubuntu-22.04-arm"
-            python-version: "pypy-3.10"
-          - os: "windows-latest"
-            python-version: "pypy-3.10"
-            architecture: x86
+        - python-version: pypy-3.10
+          build-type: cext
+        - os: ubuntu-22.04-arm
+          python-version: pypy-3.10
+        - os: windows-latest
+          python-version: pypy-3.10
+          architecture: x86
 
       fail-fast: false
 
     # steps to run in each job. Some are github actions, others run shell commands
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-      - name: Set up python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.architecture }}
+    - name: Set up python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade tox setuptools
-          pip list
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade tox setuptools
+        pip list
 
-      - name: Run tests
-        run: tox -e github-${{ matrix.build-type }} -- ${{ matrix.pytest-args }}
-        env:
+    - name: Run tests
+      run: tox -e github-${{ matrix.build-type }} -- ${{ matrix.pytest-args }}
+      env:
           # under free threading, make sure to disable GIL
-          PYTHON_GIL: ${{ contains(matrix.python-version, 't') && '0' || '' }}
-        continue-on-error: ${{ matrix.python-version == 'pypy-3.10' }}
+        PYTHON_GIL: ${{ contains(matrix.python-version, 't') && '0' || '' }}
+      continue-on-error: ${{ matrix.python-version == 'pypy-3.10' }}
 
   run-tox:
     name: ${{ matrix.tox-env }}-${{ matrix.python-version }}
@@ -160,38 +152,38 @@ jobs:
       # run this job using this matrix, excluding some combinations below.
       matrix:
         os:
-          - "ubuntu-22.04"
+        - ubuntu-22.04
         python-version:
-          - "3.12"
-          - "3.13"
+        - '3.12'
+        - '3.13'
         tox-env:
-          - mypy
-          - pep484
+        - mypy
+        - pep484
 
         include:
           # run lint only on 3.12
-          - tox-env: lint
-            python-version: "3.12"
-            os: "ubuntu-22.04"
+        - tox-env: lint
+          python-version: '3.12'
+          os: ubuntu-22.04
 
       fail-fast: false
 
     # steps to run in each job. Some are github actions, others run shell commands
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-      - name: Set up python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.architecture }}
+    - name: Set up python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade tox setuptools
-          pip list
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade tox setuptools
+        pip list
 
-      - name: Run tox
-        run: tox -e ${{ matrix.tox-env }} ${{ matrix.pytest-args }}
+    - name: Run tox
+      run: tox -e ${{ matrix.tox-env }} ${{ matrix.pytest-args }}
